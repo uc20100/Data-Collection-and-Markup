@@ -19,18 +19,21 @@ from dotenv import load_dotenv
 from functools import wraps
 from typing import Callable
 import logging
-from pprint import pprint
+import argparse
+# from pprint import pprint  # хорошо выводит на консоль json файлы
 
-__all__ = ['log_file']
+__all__ = ['FoursquareParser']
 
-
-LATITUDE_MIN = -90      # Широта минимум
-LATITUDE_MAX = 90       # Широта максимум
-LONGITUDE_MIN = -180    # Долгота минимум
-LONGITUDE_MAX = 180     # Долгота максимум
-RADIUS_MIN = 50         # Радиус минимум (метры)
-RADIUS_MAX = 100_000    # Радиус максимум (метры)
-
+LATITUDE_MIN = -90  # Широта минимум
+LATITUDE_MAX = 90  # Широта максимум
+LONGITUDE_MIN = -180  # Долгота минимум
+LONGITUDE_MAX = 180  # Долгота максимум
+RADIUS_MIN = 50  # Радиус минимум (метры)
+RADIUS_MAX = 100_000  # Радиус максимум (метры)
+LATITUDE_DEF = 53.479782  # Значение по умолчанию при создании экземпляра класса
+LONGITUDE_DEF = 49.484156  # Значение по умолчанию при создании экземпляра класса
+RADIUS_DEF = 5_000  # Значение по умолчанию при создании экземпляра класса
+QUERY_DEF = 'кофе'  # Значение по умолчанию при создании экземпляра класса
 
 # Настраиваем логирование
 logging.basicConfig(format='{levelname:<8} - {asctime}. {msg}',
@@ -51,7 +54,7 @@ class UsException(BaseException):
 # Создаем свой класс исключений
 class ValueException(UsException):
     """
-        Класс ошибки значений переменных.
+        Класс исключений значений переменных.
 
          Атрибуты:
         - self.min_value (float): минимальное значение переменной,
@@ -61,7 +64,7 @@ class ValueException(UsException):
 
          Dunder методы:
         - __init__(self, self_out, value): конструктор класса,
-        - __str__(self): Возвращает строковое представление ошибки.
+        - __str__(self): возвращает строковое представление ошибки.
         """
 
     def __init__(self, self_out, value):
@@ -182,7 +185,8 @@ class Value:
         :param value: значение переменной,
         :return: вызывает ошибку если со значениями, что-то не так.
         """
-        if (self.min_value is not None and self.max_value is not None) and isinstance(value, float):
+        if ((self.min_value is not None and self.max_value is not None) and
+                (isinstance(value, float) or isinstance(value, int))):
             if not (self.min_value <= value <= self.max_value):
                 raise ValueException(self, value)
         else:
@@ -205,8 +209,9 @@ class FoursquareParser:
     - get_info(self, query=None, latitude=None, longitude=None, radius=None) -> str: выводит информацию по нашему запросу.
 
      Dunder методы:
-    - __init__(self, api_key): Конструктор класса,
-    - __str__(self): Возвращает строковое представление студента, включая имя и список предметов.
+    - __init__(self, api_key): конструктор класса,
+    - __str__(self): возвращает строковое представление состояние аргументов объекта,
+    - __repr__(self): возвращает строковое представление объекта, которое может быть использовано для создания нового объекта.
     """
 
     # Чтение и запись в этих переменных будет производиться в дискрипторе (class Value)
@@ -217,20 +222,35 @@ class FoursquareParser:
     query = Value()
 
     def __init__(self, api_key: str = ''):
+        # Надо проинициализировать, а то будет не корректно работать
         self.__api_key = api_key
+        self.latitude = LATITUDE_DEF
+        self.longitude = LONGITUDE_DEF
+        self.radius = RADIUS_DEF
+        self.query = QUERY_DEF
 
     def __str__(self):
         """
-        Функция возвращает строковое представление студента, включая имя и список предметов.
+        Функция возвращает строковое представление состояние аргументов объекта.
 
-        :return:
+        :return: строковое состояние, аргументов объекта.
         """
-        pass
+        return (f'Центр окружности поиска (широта, долгота): {self.latitude}, {self.longitude}\n'
+                f'                 Радиус окружности поиска: {self.radius:_}\n'
+                f'                                   Запрос: "{self.query}"')
+
+    def __repr__(self):
+        """
+        Функция возвращает строковое представление объекта, которое может быть использовано для создания нового объекта.
+
+        :return: строковое представление объекта, которое может быть использовано для создания нового объекта.
+        """
+        return f"FoursquareParser(api_key=Foursquare_API_key)"
 
     @log_file(logger_val)
     def get_info(self, query=None, latitude=None, longitude=None, radius=None):
         """
-        Функция выводит информацию по запросу.
+        Функция выводит информацию по API запросу c сервиса Foursquare.
 
         :param query: запрос (кофейня, магазин и т.д.),
         :param latitude: широта центра окружности,
@@ -281,8 +301,16 @@ class FoursquareParser:
         return res
 
 
-if __name__ == '__main__':
+def get_foursquare_info(query=None, latitude=None, longitude=None, radius=None):
+    """
+    Функция выводит информацию по API запросу c сервиса Foursquare.
 
+    :param query: запрос (кофейня, магазин и т.д.),
+    :param latitude: широта центра окружности,
+    :param longitude: долгота центра окружности,
+    :param radius: радиус окружности,
+    :return: выводит на консоль и лог. файл информацию в текстовом формате (Название, адрес, рейтинг, страна).
+    """
     # Загружаем API ключ из окружения
     dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
     if os.path.exists(dotenv_path):
@@ -291,7 +319,32 @@ if __name__ == '__main__':
     foursquare_api_key = os.getenv('API_KEY')
     parser_obj = FoursquareParser(api_key=foursquare_api_key)
     # Выводим мнфу на консоль и в лог. файл, также лог. файл пишутся и исключения ValueException
-    print(parser_obj.get_info(query='кофе', latitude=53.479782, longitude=49.484156, radius=5_000))
-    print(parser_obj.get_info(query='парикмахерская'))
+    print(parser_obj.get_info(query=query, latitude=latitude, longitude=longitude, radius=radius))
 
 
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(description='Функция выводит информацию по API запросу c сервиса Foursquare.')
+    parser.add_argument('-query', metavar='query', type=str,
+                        help='что будем искать (кофейня, магазин и т.д.)', default=None)
+    parser.add_argument('-latitude', metavar='latitude', type=float,
+                        help='центр круга поиска (широта)', default=None)
+    parser.add_argument('-longitude', metavar='longitude', type=float,
+                        help='центр круга поиска (долгота)', default=None)
+    parser.add_argument('-radius', metavar='radius', type=int,
+                        help='радиус круга поиска', default=None)
+    args = parser.parse_args()
+
+    # Загружаем API ключ из окружения
+    dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+    if os.path.exists(dotenv_path):
+        load_dotenv(dotenv_path)
+    foursquare_api_key = os.getenv('API_KEY')
+    parser_obj = FoursquareParser(api_key=foursquare_api_key)
+    # Выводим мнфу на консоль и в лог. файл, также лог. файл пишутся и исключения ValueException
+    print(parser_obj.get_info(query=args.query, latitude=args.latitude, longitude=args.longitude, radius=args.radius))
+
+    # Программа будет запускаться с параметрами по умолчанию (Shift + F10), но интересней запустить с
+    # консоли задавая нужные параметры
+    # Например так:
+    # python seminar_1_hw.py -query кофе -latitude 53.5 -longitude 49.4 -radius 2_000
