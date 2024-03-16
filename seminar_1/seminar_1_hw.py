@@ -20,6 +20,7 @@ from functools import wraps
 from typing import Callable
 import logging
 import argparse
+
 # from pprint import pprint  # хорошо выводит на консоль json файлы
 
 __all__ = ['FoursquareParser']
@@ -301,27 +302,6 @@ class FoursquareParser:
         return res
 
 
-def get_foursquare_info(query=None, latitude=None, longitude=None, radius=None):
-    """
-    Функция выводит информацию по API запросу c сервиса Foursquare.
-
-    :param query: запрос (кофейня, магазин и т.д.),
-    :param latitude: широта центра окружности,
-    :param longitude: долгота центра окружности,
-    :param radius: радиус окружности,
-    :return: выводит на консоль и лог. файл информацию в текстовом формате (Название, адрес, рейтинг, страна).
-    """
-    # Загружаем API ключ из окружения
-    dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
-    if os.path.exists(dotenv_path):
-        load_dotenv(dotenv_path)
-
-    foursquare_api_key = os.getenv('API_KEY')
-    parser_obj = FoursquareParser(api_key=foursquare_api_key)
-    # Выводим мнфу на консоль и в лог. файл, также лог. файл пишутся и исключения ValueException
-    print(parser_obj.get_info(query=query, latitude=latitude, longitude=longitude, radius=radius))
-
-
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Функция выводит информацию по API запросу c сервиса Foursquare.')
@@ -347,4 +327,7 @@ if __name__ == '__main__':
     # Программа будет запускаться с параметрами по умолчанию (Shift + F10), но интересней запустить с
     # консоли задавая нужные параметры
     # Например так:
-    # python seminar_1_hw.py -query кофе -latitude 53.5 -longitude 49.4 -radius 2_000
+    # Будем искать парикмахерские в г.Самара в радиусе 2 км. Скопируем в терминал следующую команду:
+    # python seminar_1_hw.py -query парикмахерская -latitude 53.1923 -longitude 50.1461 -radius 2_000
+    # Чтобы посмотреть описание параметров, введем в терминал следующую команду:
+    # python seminar_1_hw.py --help
