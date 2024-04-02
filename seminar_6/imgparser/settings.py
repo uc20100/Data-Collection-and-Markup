@@ -14,8 +14,6 @@ BOT_NAME = "imgparser"
 SPIDER_MODULES = ["imgparser.spiders"]
 # Расположение новых пауков при команде 'scrapy genspider'
 NEWSPIDER_MODULE = "imgparser.spiders"
-# Директория куда будут сохраняться картинки
-IMAGES_STORE = 'img'
 
 # Включим/выключим логи
 LOG_ENABLED = False
@@ -38,7 +36,7 @@ CONCURRENT_REQUESTS = 16
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
 # Пауза в секундах между пачкой запроса CONCURRENT_REQUESTS
-    DOWNLOAD_DELAY = 0.3
+DOWNLOAD_DELAY = 0.3
 # The download delay setting will honor only one of:
 #CONCURRENT_REQUESTS_PER_DOMAIN = 16
 #CONCURRENT_REQUESTS_PER_IP = 16
@@ -81,6 +79,9 @@ ITEM_PIPELINES = {
    "imgparser.pipelines.ImgparserPipeline": 300,
    "imgparser.pipelines.PhotosPipeline": 200,
 }
+
+# Директория куда будут сохраняться картинки
+IMAGES_STORE = 'images'
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html

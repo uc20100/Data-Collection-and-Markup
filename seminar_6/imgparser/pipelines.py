@@ -15,17 +15,12 @@ class ImgparserPipeline:
     """
     Класс ImgparserPipeline (Трубопровод), настраиваем БД, заносит данные в БД.
 
-     Атрибуты:
-    - count_img: счётчик записанных файлов,
-
      Методы:
     -  process_item(self, item, spider): Функция заносит данные в БД MongoDB.
 
      Dunder методы:
     - __init__(self): конструктор класса.
     """
-
-    count_img = 0
 
     def __init__(self):
         # Настраиваем клиент MongoDB (IP, порт)
@@ -44,24 +39,30 @@ class ImgparserPipeline:
 
         # Создаём коллекцию в БД (имя нашего паука)
         collection = self.mongo_base[spider.name]
-        if item['path']:
+        # В категории вместо 20 картинок, запрос Xpath выдает 60 картинок
+        # картинки дублируются 3 раза, мне не удалось подобрать такой запрос Xpath
+        # чтобы очистил до 20 картинок в категории, но scrapy не записывает дубляжи картинок
+        # поэтому я проверяю прошла ли запись на диск и после этого заношу данные в БД.
+        if item.get('path'):
             # Добавляем запись в базу данных
             collection.insert_one(item)
-            # Выводим информацию о состоянии процесса
-            self.count_img += 1
-            print(f'Обработано {self.count_img} картинок')
 
-        yield item
+        return item
 
 
 class PhotosPipeline(ImagesPipeline):
     """
     Класс PhotosPipeline (Трубопровод), записывает скаченный файл на диск.
 
+     Атрибуты:
+    - count_img: счётчик обработанных файлов,
+
      Методы:
     - get_media_requests(self, item, info): Функция производит запись скаченного файла на диск, выводит информацию о количестве записей,
     - file_path(self, request, response=None, info=None, *, item=None): Функция назначает имя записываемому файла, задаёт id для записи в ПД MongoDB.
     """
+
+    count_img = 0
 
     def get_media_requests(self, item, info):
         '''
@@ -71,7 +72,11 @@ class PhotosPipeline(ImagesPipeline):
         :param info:
         :return:
         '''
+
         try:
+            # Выводим информацию о состоянии процесса
+            self.count_img += 1
+            print(f'Обработано {self.count_img} ссылок')
             yield scrapy.Request(item['url'])
         except Exception as e:
             print(e)

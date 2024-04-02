@@ -43,7 +43,7 @@ class UnsplashcomSpider(scrapy.Spider):
         :return:
         '''
         # Вычисляем обЩее количество картинок в категории
-        list_url = response.xpath("//div[@class='MorZF']/img")
+        list_url = response.xpath("//img[@data-test]")
         for item in list_url:
             # Создаем элемент loader
             loader = ItemLoader(item=ImgparserItem(), response=response)
