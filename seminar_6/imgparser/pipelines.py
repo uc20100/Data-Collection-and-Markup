@@ -9,6 +9,7 @@ from scrapy.pipelines.images import ImagesPipeline
 import hashlib
 from pymongo import MongoClient
 import os
+from imgparser.settings import IMAGES_STORE, BOT_NAME
 
 
 class ImgparserPipeline:
@@ -43,6 +44,8 @@ class ImgparserPipeline:
         # картинки дублируются 3 раза, мне не удалось подобрать такой запрос Xpath
         # чтобы очистил до 20 картинок в категории, но scrapy не записывает дубляжи картинок
         # поэтому я проверяю прошла ли запись на диск и после этого заношу данные в БД.
+        # Проверять Xpath запросы в браузере нужно при отключенном Java
+        # Отключаем Java в Chrom: Настройки -> Настройки сайта -> JavaScript -> Запретить сайтам использовать JavaScript
         if item.get('path'):
             # Добавляем запись в базу данных
             collection.insert_one(item)
@@ -94,8 +97,8 @@ class PhotosPipeline(ImagesPipeline):
         image_guid = hashlib.sha1(request.url.encode()).hexdigest()
         file_name = f"{item['name']}-{image_guid}.jpg"
         # Записываем полный путь к файлу
-        basedir = os.path.abspath(os.path.dirname(__file__))
-        file_path = os.path.join(basedir + r'\images', file_name)
+        basedir = str(os.path.abspath(os.path.dirname(__file__))).replace(BOT_NAME, '')
+        file_path = os.path.join(basedir + IMAGES_STORE, file_name)
         item['path'] = f'{file_path}'
         # Записываем id
         item['_id'] = f'{image_guid}'
